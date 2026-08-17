@@ -1,0 +1,30 @@
+{
+   "version": 4,
+   "include": [
+      "registry/registry_base.json"
+   ],
+   "configurePresets": [
+      {
+         "name": "tephra_base",
+         "hidden": true,
+         "inherits": "registry_base",
+         "cacheVariables": {
+            "VCPKG_MANIFEST_DIR": "${sourceDir}/registry/ports/tephra"
+         }
+      },
+      {
+         "name": "debug",
+         "inherits": "tephra_base",
+         "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Debug"
+         }
+      },
+      {
+         "name": "release",
+         "inherits": "tephra_base",
+         "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Release"
+         }
+      }
+   ]
+}

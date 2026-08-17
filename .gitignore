@@ -1,0 +1,10 @@
+/*
+
+!cmake
+!registry
+!source
+
+!.gitignore
+!.gitmodules
+!CMakeLists.txt
+!CMakePresets.json
