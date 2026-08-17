@@ -1,0 +1,106 @@
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generate compile_commands.json for Tephra" FORCE)
+
+set(TEPHRA_REQUIRED_CLANG_VERSION "@TEPHRA_CLANG_CONFIG_VERSION@")
+
+get_filename_component(_TEPHRA_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+
+set(_TEPHRA_EXECUTABLE_CANDIDATES
+   "${_TEPHRA_PREFIX}/tools/tephra/tephra${CMAKE_EXECUTABLE_SUFFIX}"
+   "${_TEPHRA_PREFIX}/bin/tephra${CMAKE_EXECUTABLE_SUFFIX}")
+
+unset(TEPHRA_EXECUTABLE)
+foreach (_TEPHRA_EXECUTABLE_CANDIDATE IN LISTS _TEPHRA_EXECUTABLE_CANDIDATES)
+   if (EXISTS "${_TEPHRA_EXECUTABLE_CANDIDATE}")
+      set(TEPHRA_EXECUTABLE "${_TEPHRA_EXECUTABLE_CANDIDATE}")
+      break()
+   endif ()
+endforeach ()
+
+if (NOT TEPHRA_EXECUTABLE)
+   set(tephra_FOUND FALSE)
+   set(tephra_NOT_FOUND_MESSAGE "The Tephra executable is missing from ${_TEPHRA_PREFIX}")
+   return()
+endif ()
+
+if (NOT TARGET tephra::tephra)
+   add_executable(tephra::tephra IMPORTED)
+   set_target_properties(tephra::tephra PROPERTIES
+      IMPORTED_LOCATION "${TEPHRA_EXECUTABLE}")
+endif ()
+
+function (tephra_enable TARGET_NAME)
+   if (NOT TARGET "${TARGET_NAME}")
+      message(FATAL_ERROR "tephra_enable() received unknown target '${TARGET_NAME}'")
+   endif ()
+
+   if (NOT CMAKE_CXX_COMPILER_LOADED)
+      message(FATAL_ERROR
+         "tephra_enable(${TARGET_NAME}) requires the consumer project to enable CXX")
+   endif ()
+
+   if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      message(FATAL_ERROR
+         "tephra_enable(${TARGET_NAME}) requires Clang ${TEPHRA_REQUIRED_CLANG_VERSION} "
+         "from LLVM_ROOT, but the selected C++ compiler is "
+         "'${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}' at "
+         "'${CMAKE_CXX_COMPILER}'. Set LLVM_ROOT and select its Clang compiler before "
+         "configuring the project; changing compilers requires a fresh build directory.")
+   endif ()
+
+   if (NOT CMAKE_CXX_COMPILER_VERSION STREQUAL TEPHRA_REQUIRED_CLANG_VERSION)
+      message(FATAL_ERROR
+         "tephra_enable(${TARGET_NAME}) requires Clang ${TEPHRA_REQUIRED_CLANG_VERSION}, "
+         "but the selected compiler '${CMAKE_CXX_COMPILER}' reports Clang "
+         "${CMAKE_CXX_COMPILER_VERSION}.")
+   endif ()
+
+   if ("$ENV{LLVM_ROOT}" STREQUAL "")
+      message(FATAL_ERROR
+         "tephra_enable(${TARGET_NAME}) requires LLVM_ROOT to identify the pinned Clang "
+         "installation used by the consumer")
+   endif ()
+
+   if (WIN32)
+      set(_TEPHRA_EXPECTED_CXX_COMPILER "$ENV{LLVM_ROOT}/bin/clang-cl.exe")
+   else ()
+      set(_TEPHRA_EXPECTED_CXX_COMPILER "$ENV{LLVM_ROOT}/bin/clang++")
+   endif ()
+
+   if (NOT EXISTS "${_TEPHRA_EXPECTED_CXX_COMPILER}")
+      message(FATAL_ERROR
+         "tephra_enable(${TARGET_NAME}) expected Clang at "
+         "'${_TEPHRA_EXPECTED_CXX_COMPILER}', but that file does not exist")
+   endif ()
+
+   file(REAL_PATH "${CMAKE_CXX_COMPILER}" _TEPHRA_ACTUAL_CXX_COMPILER)
+   file(REAL_PATH "${_TEPHRA_EXPECTED_CXX_COMPILER}" _TEPHRA_EXPECTED_CXX_COMPILER)
+
+   if (WIN32)
+      string(TOLOWER "${_TEPHRA_ACTUAL_CXX_COMPILER}" _TEPHRA_ACTUAL_CXX_COMPILER_COMPARE)
+      string(TOLOWER "${_TEPHRA_EXPECTED_CXX_COMPILER}" _TEPHRA_EXPECTED_CXX_COMPILER_COMPARE)
+   else ()
+      set(_TEPHRA_ACTUAL_CXX_COMPILER_COMPARE "${_TEPHRA_ACTUAL_CXX_COMPILER}")
+      set(_TEPHRA_EXPECTED_CXX_COMPILER_COMPARE "${_TEPHRA_EXPECTED_CXX_COMPILER}")
+   endif ()
+
+   if (NOT _TEPHRA_ACTUAL_CXX_COMPILER_COMPARE STREQUAL _TEPHRA_EXPECTED_CXX_COMPILER_COMPARE)
+      message(FATAL_ERROR
+         "tephra_enable(${TARGET_NAME}) requires the C++ compiler from LLVM_ROOT: "
+         "'${_TEPHRA_EXPECTED_CXX_COMPILER}'. The selected compiler is "
+         "'${_TEPHRA_ACTUAL_CXX_COMPILER}'.")
+   endif ()
+
+   if (NOT TARGET tephra_reflection)
+      add_custom_target(tephra_reflection
+         COMMAND tephra::tephra
+         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+         COMMENT "Running Tephra reflection"
+         VERBATIM)
+   endif ()
+
+   add_dependencies("${TARGET_NAME}" tephra_reflection)
+endfunction ()
+
+unset(_TEPHRA_EXECUTABLE_CANDIDATE)
+unset(_TEPHRA_EXECUTABLE_CANDIDATES)
+unset(_TEPHRA_PREFIX)

@@ -1,0 +1,12 @@
+/*
+
+!cmake
+!source
+!vcpkg
+!vcpkg_overlay
+
+!.gitignore
+!.gitmodules
+!CMakeLists.txt
+!CMakePresets.json
+!vcpkg.json

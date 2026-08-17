@@ -1,0 +1,22 @@
+{
+  "name": "tephra",
+  "version-semver": "0.1.0",
+  "description": "A LibTooling-based reflection generator for C++ projects.",
+  "homepage": "https://github.com/froncu/tephra",
+  "supports": "native",
+  "dependencies": [
+    {
+      "name": "libxml2"
+    },
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "zlib"
+    },
+    {
+      "name": "zstd"
+    }
+  ]
+}

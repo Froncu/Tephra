@@ -1,0 +1,11 @@
+{
+   "name": "tephra",
+   "version-semver": "0.1.0",
+   "description": "A LibTooling-based reflection generator for C++ projects.",
+   "homepage": "https://github.com/froncu/tephra",
+   "dependencies": [
+      "libxml2",
+      "zlib",
+      "zstd"
+   ]
+}
